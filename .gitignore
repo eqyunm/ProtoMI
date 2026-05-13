@@ -1,0 +1,21 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 虚拟环境
+venv/
+.env/
+
+# 深度学习/模型数据
+*.pth
+*.pt
+*.h5
+/dataset/
+/checkpoints/
+
+# IDE 配置文件
+.idea/
+.vscode/
+
+some advice.md
+IMVC_Research_Proposal.md

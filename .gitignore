@@ -6,6 +6,9 @@ __pycache__/
 venv/
 .env/
 
+# 实验日志
+/logs/
+
 # 深度学习/模型数据
 *.pth
 *.pt

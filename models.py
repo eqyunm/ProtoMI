@@ -10,6 +10,7 @@ from typing import List, Tuple
 # Building blocks
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class MLPEncoder(nn.Module):
     """MLP encoder: input_dim → hidden_dims → latent_dim."""
 
@@ -50,6 +51,7 @@ class ClusteringHead(nn.Module):
     def __init__(self, d_z: int, n_clusters: int, hidden_dim: int = 256):
         super().__init__()
         self.fc = nn.Sequential(
+            nn.LayerNorm(d_z),
             nn.Linear(d_z, hidden_dim),
             nn.ReLU(inplace=True),
             nn.Linear(hidden_dim, n_clusters),
@@ -99,7 +101,7 @@ class ProtoMI(nn.Module):
         )
         self.head = ClusteringHead(d_z, n_clusters)
 
-        # Proto mapper: φ_{v→u} — one per ordered pair
+        # Proto mapper: φ_{v→u} — one linear layer per ordered pair, starts as identity
         self.mappers = nn.ModuleDict(
             {
                 f"{v}_{u}": nn.Linear(d_z, d_z)
@@ -108,11 +110,12 @@ class ProtoMI(nn.Module):
                 if v != u
             }
         )
-        # Start each mapper as identity so early-training pseudo-assignments are
-        # meaningful before the mappers have learned cross-view structure.
         for m in self.mappers.values():
             nn.init.eye_(m.weight)
             nn.init.zeros_(m.bias)
+
+        # EMA prototypes — updated with momentum each batch, not a learnable param
+        self.register_buffer("ema_protos", torch.zeros(n_views, n_clusters, d_z))
 
     # ── Forward helpers ───────────────────────────────────────────────────────
 
@@ -131,3 +134,22 @@ class ProtoMI(nn.Module):
     def map_proto(self, src: int, tgt: int, h: torch.Tensor) -> torch.Tensor:
         """Apply φ_{src→tgt} to latent vectors h: (B, d_z) → (B, d_z)."""
         return self.mappers[f"{src}_{tgt}"](h)
+
+    @torch.no_grad()
+    def update_ema_protos(
+        self,
+        H: List[torch.Tensor],
+        Q: List[torch.Tensor],
+        mask: torch.Tensor,
+        momentum: float = 0.99,
+    ) -> None:
+        """EMA-update prototype buffer from the current batch (call after opt.step)."""
+        for v in range(self.n_views):
+            avail = mask[:, v] > 0
+            if avail.sum() < 1:
+                continue
+            q_v = Q[v][avail].detach()                          # (N_v, K)
+            h_v = H[v][avail].detach()                          # (N_v, d_z)
+            w = q_v.T / (q_v.T.sum(dim=1, keepdim=True) + 1e-8)
+            cur = w @ h_v                                        # (K, d_z)
+            self.ema_protos[v].mul_(momentum).add_(cur, alpha=1.0 - momentum)

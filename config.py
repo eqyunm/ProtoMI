@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Tuple
 
 
@@ -29,13 +29,14 @@ class Config:
 
     # ── Loss weights ──────────────────────────────────────────────────────────
     alpha: float = 5.0          # entropy guard weight (L_H)
-    beta: float = 1.0           # redundancy reduction weight (L_RR)
+    beta: float = 0.5           # redundancy reduction weight (L_RR)
     gamma_var: float = 1.0      # variance threshold for L_Var
     lambda_off: float = 0.005   # off-diagonal RR penalty
     delta_start: float = 0.1    # PD ramp start value
     delta_end: float = 1.0      # PD ramp end value
     pd_ramp_start: int = 50     # joint epoch to begin PD ramp
     pd_ramp_end: int = 100      # joint epoch where PD reaches delta_end
+    pseudo_pmi_start: int = 80  # joint epoch to activate pseudo-PMI (after mapper is trained)
     tau_d: float = 0.5          # distillation temperature
     recon_weight_joint: float = 0.0   # 0 = auto-adaptive; >0 = manual override
     recon_anchor_target: float = 50.0 # desired recon contribution per batch at joint start

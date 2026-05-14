@@ -24,11 +24,10 @@ class DatasetInfo:
 
 
 DATASET_REGISTRY: dict = {
-    "handwritten": DatasetInfo("dataset/handwritten.mat", 10),
-    "bdgp":        DatasetInfo("dataset/BDGP_fea.mat",    5,  normalize=True,
-                               alpha=2.0, warmup_epochs=50),
-    "cub":         DatasetInfo("dataset/CUB.mat",          10),
-    "caltech7":    DatasetInfo("dataset/Caltech101-7.mat", 7,  y_key="y"),
+    "handwritten": DatasetInfo("dataset/handwritten.mat", 10, normalize=True),
+    "bdgp":        DatasetInfo("dataset/BDGP_fea.mat",    5,  normalize=True),
+    "cub":         DatasetInfo("dataset/CUB.mat",          10, normalize=True),
+    "caltech7":    DatasetInfo("dataset/Caltech101-7.mat", 7, normalize=True),
 }
 
 
